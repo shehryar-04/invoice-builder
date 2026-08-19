@@ -1,5 +1,6 @@
 import React from 'react';
 import { calculateLineTotal } from '../utils/calculations';
+import { isWithinMaxDigits } from '../utils/validation';
 
 export default function LineItemRow({
   item,
@@ -12,6 +13,10 @@ export default function LineItemRow({
   const handleChange = (field, value) => {
     let numValue = value;
     if (field === 'quantity' || field === 'unitPrice') {
+      // Enforce 20-digit maximum for numeric fields
+      if (!isWithinMaxDigits(value, 20)) {
+        return; // Prevent input that exceeds 20 digits
+      }
       numValue = value === '' ? 0 : Math.max(0, parseFloat(value) || 0);
     }
     onUpdate({ ...item, [field]: numValue });
@@ -27,6 +32,7 @@ export default function LineItemRow({
           value={item.description}
           onChange={(e) => handleChange('description', e.target.value)}
           placeholder="Description"
+          maxLength="500"
           className={errors?.description ? 'input-error' : ''}
         />
         {errors?.description && (

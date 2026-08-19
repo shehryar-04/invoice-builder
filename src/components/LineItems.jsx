@@ -1,4 +1,3 @@
-import React from 'react';
 import LineItemRow from './LineItemRow';
 import { generateLineItemId } from '../utils/storage';
 

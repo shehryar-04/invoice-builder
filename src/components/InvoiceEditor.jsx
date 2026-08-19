@@ -1,8 +1,18 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import InvoiceHeader from './InvoiceHeader';
 import LineItems from './LineItems';
 import InvoiceSummary from './InvoiceSummary';
-import { validateInvoice, validateTaxPercentage, validateDiscount } from '../utils/validation';
+import {
+  validateInvoice,
+  validateClientName,
+  validateInvoiceDateField,
+  validateItemDescription,
+  validateQuantity,
+  validateUnitPrice,
+  validateTaxPercentage,
+  validateDiscount,
+  isWithinMaxDigits
+} from '../utils/validation';
 
 export default function InvoiceEditor({
   invoice,
@@ -18,12 +28,40 @@ export default function InvoiceEditor({
       ...invoice,
       [field]: value
     });
-    // Clear error for this field
-    if (validationErrors[field]) {
-      const newErrors = { ...validationErrors };
-      delete newErrors[field];
-      setValidationErrors(newErrors);
+
+    // Real-time validation for each header field
+    const newErrors = { ...validationErrors };
+
+    if (field === 'clientName') {
+      const error = validateClientName(value);
+      if (error) {
+        newErrors.clientName = error;
+      } else {
+        delete newErrors.clientName;
+      }
+    } else if (field === 'invoiceDate') {
+      const error = validateInvoiceDateField(value);
+      if (error) {
+        newErrors.invoiceDate = error;
+      } else {
+        delete newErrors.invoiceDate;
+      }
     }
+
+    // Preserve header errors object structure
+    const headerErrors = newErrors.header || {};
+    const filteredHeaderErrors = Object.keys(headerErrors).reduce((acc, key) => {
+      if (key !== field) acc[key] = headerErrors[key];
+      return acc;
+    }, {});
+
+    if (Object.keys(filteredHeaderErrors).length > 0) {
+      newErrors.header = filteredHeaderErrors;
+    } else {
+      delete newErrors.header;
+    }
+
+    setValidationErrors(newErrors);
   };
 
   const handleItemsChange = (items) => {
@@ -31,54 +69,84 @@ export default function InvoiceEditor({
       ...invoice,
       items
     });
-    // Clear items error
-    if (validationErrors.items || validationErrors.itemErrors) {
-      const newErrors = { ...validationErrors };
-      delete newErrors.items;
+
+    // Real-time validation for all item fields
+    const itemErrors = [];
+    items.forEach((item, index) => {
+      const errors = {};
+
+      const descError = validateItemDescription(item.description);
+      if (descError) errors.description = descError;
+
+      const qtyError = validateQuantity(item.quantity);
+      if (qtyError) errors.quantity = qtyError;
+
+      const priceError = validateUnitPrice(item.unitPrice);
+      if (priceError) errors.unitPrice = priceError;
+
+      if (Object.keys(errors).length > 0) {
+        itemErrors.push({ index, errors });
+      }
+    });
+
+    // Update validation errors
+    const newErrors = { ...validationErrors };
+    if (itemErrors.length > 0) {
+      newErrors.itemErrors = itemErrors;
+    } else {
       delete newErrors.itemErrors;
-      setValidationErrors(newErrors);
     }
+    delete newErrors.items; // Clear general items error when there are specific item errors
+
+    setValidationErrors(newErrors);
   };
 
   const handleTaxChange = (value) => {
-    const numValue = value === '' ? 0 : Math.max(0, parseFloat(value) || 0);
-    const error = validateTaxPercentage(numValue);
-    
+    const numValue = value === '' ? 0 : parseFloat(value) || 0;
+
     onInvoiceChange({
       ...invoice,
       taxPercentage: numValue
     });
 
+    const error = validateTaxPercentage(numValue);
+    const newErrors = { ...validationErrors };
+
     if (error) {
-      setValidationErrors({ ...validationErrors, taxPercentage: error });
+      newErrors.taxPercentage = error;
     } else {
-      const newErrors = { ...validationErrors };
       delete newErrors.taxPercentage;
-      setValidationErrors(newErrors);
     }
+
+    setValidationErrors(newErrors);
   };
 
   const handleDiscountChange = (value) => {
-    const numValue = value === '' ? 0 : Math.max(0, parseFloat(value) || 0);
-    const error = validateDiscount(numValue);
-    
+    if (!isWithinMaxDigits(value, 50)) {
+      return;
+    }
+    const numValue = value === '' ? 0 : parseFloat(value) || 0;
+
     onInvoiceChange({
       ...invoice,
       discount: numValue
     });
 
+    const error = validateDiscount(numValue);
+    const newErrors = { ...validationErrors };
+
     if (error) {
-      setValidationErrors({ ...validationErrors, discount: error });
+      newErrors.discount = error;
     } else {
-      const newErrors = { ...validationErrors };
       delete newErrors.discount;
-      setValidationErrors(newErrors);
     }
+
+    setValidationErrors(newErrors);
   };
 
   const handleSave = () => {
     const errors = validateInvoice(invoice);
-    
+
     if (Object.keys(errors).length > 0) {
       setValidationErrors(errors);
       return;
@@ -116,6 +184,7 @@ export default function InvoiceEditor({
               onChange={(e) => handleTaxChange(e.target.value)}
               placeholder="0"
               min="0"
+              max="100"
               step="0.1"
               className={validationErrors.taxPercentage ? 'input-error' : ''}
             />
@@ -127,7 +196,7 @@ export default function InvoiceEditor({
         </div>
 
         <div className="form-group">
-          <label htmlFor="discount">Discount (amount)</label>
+          <label htmlFor="discount">Discount</label>
           <input
             id="discount"
             type="number"

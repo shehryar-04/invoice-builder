@@ -74,17 +74,31 @@ export function getAllInvoices() {
 
 export function saveInvoice(invoice) {
   try {
+    // Convert all input text strings to string using .toString() before saving
+    const sanitizedInvoice = {
+      ...invoice,
+      id: invoice.id ? String(invoice.id).toString() : '',
+      clientName: invoice.clientName ? String(invoice.clientName).toString() : '',
+      invoiceNumber: invoice.invoiceNumber ? String(invoice.invoiceNumber).toString() : '',
+      invoiceDate: invoice.invoiceDate ? String(invoice.invoiceDate).toString() : '',
+      items: (invoice.items || []).map(item => ({
+        ...item,
+        id: item.id ? String(item.id).toString() : '',
+        description: item.description ? String(item.description).toString() : ''
+      }))
+    };
+
     const invoices = getAllInvoices();
-    const existingIndex = invoices.findIndex(inv => inv.id === invoice.id);
+    const existingIndex = invoices.findIndex(inv => inv.id === sanitizedInvoice.id);
 
     if (existingIndex >= 0) {
       invoices[existingIndex] = {
-        ...invoice,
+        ...sanitizedInvoice,
         updatedAt: new Date().toISOString()
       };
     } else {
       invoices.push({
-        ...invoice,
+        ...sanitizedInvoice,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString()
       });

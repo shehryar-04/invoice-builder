@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import SearchBar from './SearchBar';
 import { calculateInvoiceTotals } from '../utils/calculations';
 
@@ -9,6 +9,15 @@ export default function SavedInvoices({
   onCreateNew
 }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [expandedFields, setExpandedFields] = useState({});
+
+  const toggleExpand = (invoiceId, field) => {
+    const key = `${invoiceId}-${field}`;
+    setExpandedFields(prev => ({
+      ...prev,
+      [key]: !prev[key]
+    }));
+  };
 
   const filteredInvoices = useMemo(() => {
     if (!searchTerm.trim()) {
@@ -102,7 +111,30 @@ export default function SavedInvoices({
                     className="invoice-row"
                   >
                     <td>{invoice.invoiceNumber}</td>
-                    <td>{invoice.clientName}</td>
+                    <td className="truncate-cell">
+                      {invoice.clientName.length > 25 ? (
+                        <div className="tooltip-container">
+                          {expandedFields[`${invoice.id}-client`] ? (
+                            <span className="expanded-text">{invoice.clientName}</span>
+                          ) : (
+                            <span className="truncate-text">{invoice.clientName}</span>
+                          )}
+                          <span className="tooltip-text">Client: {invoice.clientName}</span>
+                          <button
+                            type="button"
+                            className="btn-show-more"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              toggleExpand(invoice.id, 'client');
+                            }}
+                          >
+                            {expandedFields[`${invoice.id}-client`] ? 'Show Less' : 'Show More'}
+                          </button>
+                        </div>
+                      ) : (
+                        invoice.clientName
+                      )}
+                    </td>
                     <td>{formatDate(invoice.invoiceDate)}</td>
                     <td className="text-right">
                       {formatCurrency(grandTotal)}

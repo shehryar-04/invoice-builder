@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import InvoiceEditor from './components/InvoiceEditor';
 import SavedInvoices from './components/SavedInvoices';
+import Modal from './components/Modal';
 import {
   createNewInvoice,
   getAllInvoices,
@@ -15,6 +16,12 @@ function App() {
   const [editingId, setEditingId] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
+  const [modal, setModal] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    type: 'info'
+  });
 
   // Load invoices on mount
   useEffect(() => {
@@ -33,6 +40,25 @@ function App() {
     return () => window.removeEventListener('storage', handleStorageChange);
   }, []);
 
+  /**
+   * Open modal with message
+   */
+  const openModal = (title, message, type = 'info') => {
+    setModal({
+      isOpen: true,
+      title,
+      message,
+      type
+    });
+  };
+
+  /**
+   * Close modal
+   */
+  const closeModal = () => {
+    setModal({ isOpen: false, title: '', message: '', type: 'info' });
+  };
+
   const loadInvoices = () => {
     const invoices = getAllInvoices();
     setSavedInvoices(invoices);
@@ -46,14 +72,14 @@ function App() {
         loadInvoices();
         setEditingId(currentInvoice.id);
         // Show success feedback
-        alert('Invoice saved successfully!');
+        openModal('Success', 'Invoice saved successfully!', 'success');
         // Reset to create new
         setTimeout(() => {
           setCurrentInvoice(createNewInvoice());
           setEditingId(null);
         }, 500);
       } else {
-        alert('Error saving invoice. Please try again.');
+        openModal('Error', 'Error saving invoice. Please try again.', 'error');
       }
     } finally {
       setIsSaving(false);
@@ -82,9 +108,9 @@ function App() {
         setCurrentInvoice(createNewInvoice());
         setEditingId(null);
       }
-      alert('Invoice deleted successfully!');
+      openModal('Success', 'Invoice deleted successfully!', 'success');
     } else {
-      alert('Error deleting invoice. Please try again.');
+      openModal('Error', 'Error deleting invoice. Please try again.', 'error');
     }
   };
 
@@ -137,6 +163,14 @@ function App() {
           />
         </section>
       </main>
+
+      <Modal
+        isOpen={modal.isOpen}
+        title={modal.title}
+        message={modal.message}
+        type={modal.type}
+        onClose={closeModal}
+      />
     </div>
   );
 }
