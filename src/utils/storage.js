@@ -122,14 +122,15 @@ export function getInvoiceById(id) {
   }
 }
 
-export function deleteInvoice(id) {
+export function deleteInvoice(idOrIds) {
   try {
+    const ids = Array.isArray(idOrIds) ? idOrIds : [idOrIds];
     const invoices = getAllInvoices();
-    const filtered = invoices.filter(inv => inv.id !== id);
+    const filtered = invoices.filter(inv => !ids.includes(inv.id));
     localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
     return true;
   } catch (error) {
-    console.error('Error deleting invoice from storage:', error);
+    console.error('Error deleting invoice(s) from storage:', error);
     return false;
   }
 }

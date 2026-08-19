@@ -10,6 +10,7 @@ export default function SavedInvoices({
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedFields, setExpandedFields] = useState({});
+  const [selectedIds, setSelectedIds] = useState([]);
 
   const toggleExpand = (invoiceId, field) => {
     const key = `${invoiceId}-${field}`;
@@ -30,14 +31,39 @@ export default function SavedInvoices({
     );
   }, [invoices, searchTerm]);
 
-  const handleRowClick = (invoice) => {
-    onSelectInvoice(invoice);
+  const handleRowClick = (invoiceId) => {
+    setSelectedIds(prev => {
+      if (prev.includes(invoiceId)) {
+        return prev.filter(id => id !== invoiceId);
+      } else {
+        return [...prev, invoiceId];
+      }
+    });
   };
 
-  const handleDelete = (e, invoiceId) => {
-    e.stopPropagation();
-    if (confirm('Are you sure you want to delete this invoice?')) {
-      onDeleteInvoice(invoiceId);
+  const handleSelectAllToggle = () => {
+    if (selectedIds.length === filteredInvoices.length) {
+      setSelectedIds([]);
+    } else {
+      setSelectedIds(filteredInvoices.map(inv => inv.id));
+    }
+  };
+
+  const handleEditSelected = () => {
+    if (selectedIds.length === 1) {
+      const selectedInvoice = invoices.find(inv => inv.id === selectedIds[0]);
+      if (selectedInvoice) {
+        onSelectInvoice(selectedInvoice);
+      }
+    }
+  };
+
+  const handleDeleteSelected = () => {
+    if (selectedIds.length > 0) {
+      if (confirm(`Are you sure you want to delete the ${selectedIds.length} selected invoice(s)?`)) {
+        onDeleteInvoice(selectedIds);
+        setSelectedIds([]);
+      }
     }
   };
 
@@ -65,8 +91,25 @@ export default function SavedInvoices({
     <div className="saved-invoices">
       <div className="saved-invoices-header">
         <h2>Saved Invoices</h2>
-        <button onClick={onCreateNew} className="btn-new-invoice">
-          + New Invoice
+      </div>
+
+      <div className="saved-invoices-actions-toolbar">
+        <button onClick={onCreateNew} className="btn-action-create">
+          + Create Invoice
+        </button>
+        <button 
+          onClick={handleEditSelected} 
+          className="btn-action-edit"
+          disabled={selectedIds.length !== 1}
+        >
+          Edit Selected
+        </button>
+        <button 
+          onClick={handleDeleteSelected} 
+          className="btn-action-delete"
+          disabled={selectedIds.length === 0}
+        >
+          Delete Selected
         </button>
       </div>
 
@@ -94,22 +137,36 @@ export default function SavedInvoices({
           <table className="invoices-table">
             <thead>
               <tr>
+                <th style={{ width: '40px', textAlign: 'center' }}>
+                  <input
+                    type="checkbox"
+                    checked={filteredInvoices.length > 0 && selectedIds.length === filteredInvoices.length}
+                    onChange={handleSelectAllToggle}
+                  />
+                </th>
                 <th>Invoice #</th>
                 <th>Client</th>
                 <th>Date</th>
                 <th>Grand Total</th>
-                <th>Actions</th>
               </tr>
             </thead>
             <tbody>
               {filteredInvoices.map((invoice) => {
                 const { grandTotal } = calculateInvoiceTotals(invoice);
+                const isSelected = selectedIds.includes(invoice.id);
                 return (
                   <tr
                     key={invoice.id}
-                    onClick={() => handleRowClick(invoice)}
-                    className="invoice-row"
+                    onClick={() => handleRowClick(invoice.id)}
+                    className={`invoice-row ${isSelected ? 'selected' : ''}`}
                   >
+                    <td style={{ textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+                      <input
+                        type="checkbox"
+                        checked={isSelected}
+                        onChange={() => handleRowClick(invoice.id)}
+                      />
+                    </td>
                     <td>{invoice.invoiceNumber}</td>
                     <td className="truncate-cell">
                       {invoice.clientName.length > 25 ? (
@@ -138,15 +195,6 @@ export default function SavedInvoices({
                     <td>{formatDate(invoice.invoiceDate)}</td>
                     <td className="text-right">
                       {formatCurrency(grandTotal)}
-                    </td>
-                    <td className="actions">
-                      <button
-                        onClick={(e) => handleDelete(e, invoice.id)}
-                        className="btn-delete-small"
-                        title="Delete invoice"
-                      >
-                        Delete
-                      </button>
                     </td>
                   </tr>
                 );

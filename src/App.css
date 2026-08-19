@@ -89,7 +89,7 @@
   font-size: 1.5rem;
   color: #333;
   font-weight: 600;
-   letter-spacing: -0.02em;
+  letter-spacing: -0.02em;
 }
 
 .header-grid {
@@ -188,14 +188,16 @@
 
 /* Line Items Styles */
 .line-items-section {
-  padding: 1.5rem 0;
+  padding: 1.5rem 0 1.5rem 1.5rem;
+  border-left: 4px solid #e2e8f0;
   border-bottom: 1px solid #e0e0e0;
+  margin-left: 0.5rem;
 }
 
 .line-items-section h2 {
-  margin: 0 0 1.5rem 0;
-  font-size: 1.5rem;
-  color: #333;
+  margin: 0 0 1.25rem 0;
+  font-size: 1.35rem;
+  color: #4a5568;
   font-weight: 600;
 }
 
@@ -755,12 +757,13 @@
 }
 
 @media (max-width: 768px) {
+
   /* On mobile, disable the hover tooltip */
   .tooltip-container:hover .tooltip-text {
     visibility: hidden;
     opacity: 0;
   }
-  
+
   /* Show the toggle button */
   .btn-show-more {
     display: block;
@@ -777,4 +780,74 @@
   }
 }
 
+/* Toolbar and Row Highlight Styles */
+.saved-invoices-actions-toolbar {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
 
+.btn-action-create,
+.btn-action-edit,
+.btn-action-delete {
+  padding: 0.65rem 1.25rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.btn-action-create {
+  background-color: #667eea;
+  color: white;
+}
+
+.btn-action-create:hover {
+  background-color: #5568d3;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.2);
+}
+
+.btn-action-edit {
+  background-color: #edf2f7;
+  color: #4a5568;
+  border: 1px solid #cbd5e0;
+}
+
+.btn-action-edit:hover:not(:disabled) {
+  background-color: #e2e8f0;
+  color: #2d3748;
+}
+
+.btn-action-delete {
+  background-color: #fff5f5;
+  color: #c53030;
+  border: 1px solid #feb2b2;
+}
+
+.btn-action-delete:hover:not(:disabled) {
+  background-color: #fed7d7;
+  color: #9b2c2c;
+}
+
+.btn-action-edit:disabled,
+.btn-action-delete:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background-color: #f7fafc;
+  color: #a0aec0;
+  border-color: #e2e8f0;
+  box-shadow: none;
+}
+
+/* Highlight Selected Row in Table */
+.invoices-table tbody tr.invoice-row.selected {
+  background-color: #ebf8ff;
+  border-left: 3px solid #3182ce;
+}
+
+.invoices-table tbody tr.invoice-row.selected:hover {
+  background-color: #e6f6ff;
+}

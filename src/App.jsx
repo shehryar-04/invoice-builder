@@ -14,6 +14,7 @@ function App() {
   const [currentInvoice, setCurrentInvoice] = useState(null);
   const [savedInvoices, setSavedInvoices] = useState([]);
   const [editingId, setEditingId] = useState(null);
+  const [originalInvoice, setOriginalInvoice] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [showEditor, setShowEditor] = useState(false);
   const [modal, setModal] = useState({
@@ -28,6 +29,7 @@ function App() {
     loadInvoices();
     // Create a new invoice on app start if we don't have one
     setCurrentInvoice(createNewInvoice());
+    setOriginalInvoice(null);
   }, []);
 
   // Listen for storage changes from other tabs
@@ -65,12 +67,22 @@ function App() {
   };
 
   const handleSaveInvoice = async () => {
+    // Check if there are any changes before saving an edited invoice
+    if (editingId && originalInvoice) {
+      const hasChanges = JSON.stringify(currentInvoice) !== JSON.stringify(originalInvoice);
+      if (!hasChanges) {
+        openModal('Error', "You haven't made any changes to the invoice yet.", 'error');
+        return;
+      }
+    }
+
     setIsSaving(true);
     try {
       const success = saveInvoice(currentInvoice);
       if (success) {
         loadInvoices();
         setEditingId(currentInvoice.id);
+        setOriginalInvoice(null);
         // Show success feedback
         openModal('Success', 'Invoice saved successfully!', 'success');
         // Reset to create new
@@ -89,6 +101,7 @@ function App() {
   const handleSelectInvoice = (invoice) => {
     setCurrentInvoice(invoice);
     setEditingId(invoice.id);
+    setOriginalInvoice(JSON.parse(JSON.stringify(invoice)));
     setShowEditor(true);
     // Scroll to editor
     setTimeout(() => {
@@ -99,24 +112,26 @@ function App() {
     }, 100);
   };
 
-  const handleDeleteInvoice = (id) => {
-    const success = deleteInvoice(id);
+  const handleDeleteInvoice = (idOrIds) => {
+    const ids = Array.isArray(idOrIds) ? idOrIds : [idOrIds];
+    const success = deleteInvoice(ids);
     if (success) {
       loadInvoices();
       // If the deleted invoice was being edited, reset to new
-      if (editingId === id) {
+      if (ids.includes(editingId)) {
         setCurrentInvoice(createNewInvoice());
         setEditingId(null);
       }
-      openModal('Success', 'Invoice deleted successfully!', 'success');
+      openModal('Success', 'Invoice(s) deleted successfully!', 'success');
     } else {
-      openModal('Error', 'Error deleting invoice. Please try again.', 'error');
+      openModal('Error', 'Error deleting invoice(s). Please try again.', 'error');
     }
   };
 
   const handleCreateNew = () => {
     setCurrentInvoice(createNewInvoice());
     setEditingId(null);
+    setOriginalInvoice(null);
     setShowEditor(true);
     // Scroll to editor
     setTimeout(() => {
